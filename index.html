@@ -22,6 +22,7 @@
       --border-focus: rgba(37,99,235,0.5);
       --error: #ef4444;
       --success: #10b981;
+      --warning: #f59e0b;
     }
 
     body {
@@ -41,7 +42,6 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    /* Subtle light background pattern */
     body::before {
       content: '';
       position: fixed;
@@ -77,63 +77,6 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* Header */
-    .header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .header-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(37,99,235,0.08);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 6px 16px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--accent2);
-      margin-bottom: 20px;
-    }
-
-    .header-badge::before {
-      content: '';
-      width: 6px; height: 6px;
-      background: var(--accent2);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--accent2);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.5; transform: scale(0.8); }
-    }
-
-    .header h1 {
-      font-family: 'Unbounded', sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      background: linear-gradient(135deg, #1e293b 0%, #2563eb 60%, #0891b2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 10px;
-    }
-
-    .header p {
-      color: var(--text-muted);
-      font-size: 14px;
-      font-weight: 400;
-      line-height: 1.6;
-    }
-
-    /* Card */
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -156,7 +99,6 @@
       opacity: 0.6;
     }
 
-    /* Section title */
     .section-label {
       display: flex;
       align-items: center;
@@ -183,7 +125,6 @@
       background: var(--border);
     }
 
-    /* Field */
     .field { margin-bottom: 14px; position: relative; }
 
     .field label {
@@ -242,10 +183,8 @@
       opacity: 0.7;
     }
 
-    /* Row */
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    /* Submit */
     .submit-btn {
       width: 100%;
       margin-top: 20px;
@@ -295,7 +234,6 @@
       box-shadow: 0 4px 20px rgba(59,130,246,0.25);
     }
 
-    /* Error message */
     .status-message {
       display: none;
       margin-top: 16px;
@@ -303,6 +241,8 @@
       border-radius: 10px;
       font-size: 14px;
       line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     .status-message.show { display: block; }
@@ -311,8 +251,23 @@
       border: 1px solid rgba(239, 68, 68, 0.2);
       color: #b91c1c;
     }
+    .status-message.info {
+      display: block;
+      margin-top: 20px;
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.18);
+      color: #1d4ed8;
+      font-size: 12px;
+    }
+    .status-message.warning {
+      display: block;
+      margin-top: 20px;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.22);
+      color: #b45309;
+      font-size: 12px;
+    }
 
-    /* Success overlay */
     .success-overlay {
       display: none;
       flex-direction: column;
@@ -355,7 +310,6 @@
       line-height: 1.6;
     }
 
-    /* Footer */
     .footer {
       text-align: center;
       margin-top: 20px;
@@ -366,8 +320,6 @@
 
     @media (max-width: 600px) {
       .card { padding: 20px 16px; }
-      .header h1 { font-size: 22px; }
-      .header { margin-bottom: 20px; }
       .row { grid-template-columns: 1fr; }
       .field input { font-size: 16px; }
       .submit-btn { font-size: 15px; }
@@ -377,16 +329,13 @@
 <body>
   <div class="grid-overlay"></div>
   <div class="container">
-
     <div class="card">
-      <!-- Success state -->
       <div class="success-overlay" id="successOverlay">
         <div class="success-icon">✓</div>
         <h2>Дякуємо!</h2>
         <p>Ваші дані успішно збережено.<br>Тепер ви можете користуватися ботом.</p>
       </div>
 
-      <!-- Form -->
       <div class="form-content" id="formContent">
         <div class="section-label">Особисті дані</div>
 
@@ -465,6 +414,8 @@
         </button>
 
         <div class="status-message error" id="statusMessage"></div>
+        <div class="status-message info" id="debugStatus">Ініціалізація діагностики...</div>
+        <div class="status-message warning" id="payloadStatus">Payload ще не формувався.</div>
       </div>
     </div>
 
@@ -474,9 +425,43 @@
   <script>
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
+    function setDebug(message) {
+      const el = document.getElementById('debugStatus');
+      el.textContent = message;
+      console.log('[WEBAPP DEBUG]', message);
+    }
+
+    function setPayloadDebug(message) {
+      const el = document.getElementById('payloadStatus');
+      el.textContent = message;
+      console.log('[WEBAPP PAYLOAD]', message);
+    }
+
+    function safeStringify(value) {
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch (e) {
+        return String(value);
+      }
+    }
+
     if (tg) {
       tg.ready();
       tg.expand();
+      setDebug(
+        'Telegram WebApp доступний. ' +
+        'platform=' + (tg.platform || 'unknown') + '; ' +
+        'version=' + (tg.version || 'unknown') + '; ' +
+        'colorScheme=' + (tg.colorScheme || 'unknown') + '; ' +
+        'initData=' + (tg.initData ? 'present' : 'missing') + '; ' +
+        'user=' + ((tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.username) || (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 'unknown')
+      );
+      console.log('Telegram.WebApp object:', tg);
+      console.log('Telegram.WebApp.initDataUnsafe:', tg.initDataUnsafe);
+      console.log('Telegram.WebApp.initData:', tg.initData);
+    } else {
+      setDebug('Telegram WebApp SDK недоступний. Якщо ви бачите це повідомлення в Telegram, Mini App відкрито не в режимі WebApp або скрипт Telegram не завантажився.');
+      console.error('Telegram WebApp SDK недоступний');
     }
 
     function setFieldError(el) {
@@ -521,6 +506,7 @@
             setFieldError(el);
           }
         });
+        setPayloadDebug('Валідація не пройдена: одне або більше обовʼязкових полів порожні.');
         showStatus('Будь ласка, заповніть усі обовʼязкові поля.');
         return;
       }
@@ -539,6 +525,8 @@
         }
       };
 
+      setPayloadDebug('Payload сформовано:\n' + safeStringify(payload));
+
       if (!tg) {
         console.error('Telegram WebApp SDK недоступний');
         showStatus('Цю форму потрібно відкривати всередині Telegram-бота.');
@@ -547,14 +535,14 @@
 
       try {
         submitBtn.disabled = true;
+        setDebug('Викликаю tg.sendData(...)');
         tg.sendData(JSON.stringify(payload));
+        setDebug('tg.sendData(...) виконано без помилки JavaScript. Якщо бот нічого не отримав, перевіряйте обробник web_app_data у боті.');
         showSuccess();
-        // setTimeout(() => {
-        //   tg.close();
-        // }, 300);
       } catch (error) {
         console.error('Помилка відправлення в Telegram:', error);
         submitBtn.disabled = false;
+        setDebug('Помилка tg.sendData(...): ' + (error && error.message ? error.message : String(error)));
         showStatus('Не вдалося передати дані в Telegram. Спробуйте ще раз.');
       }
     }
