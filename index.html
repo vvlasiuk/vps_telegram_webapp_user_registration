@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Реєстрація</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -287,6 +288,30 @@
 
     .submit-btn:active { transform: translateY(0); }
 
+    .submit-btn[disabled] {
+      opacity: 0.7;
+      cursor: wait;
+      transform: none;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.25);
+    }
+
+    /* Error message */
+    .status-message {
+      display: none;
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .status-message.show { display: block; }
+    .status-message.error {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #b91c1c;
+    }
+
     /* Success overlay */
     .success-overlay {
       display: none;
@@ -438,9 +463,11 @@
           </div>
         </div>
 
-        <button class="submit-btn" onclick="handleSubmit()">
+        <button class="submit-btn" id="submitBtn" onclick="handleSubmit()">
           Зберегти профіль <span>→</span>
         </button>
+
+        <div class="status-message error" id="statusMessage"></div>
       </div>
     </div>
 
@@ -448,25 +475,56 @@
   </div>
 
   <script>
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    function setFieldError(el) {
+      el.style.borderColor = 'var(--error)';
+      el.style.boxShadow = '0 0 0 3px rgba(248,113,113,0.2)';
+      el.addEventListener('input', () => {
+        el.style.borderColor = '';
+        el.style.boxShadow = '';
+      }, { once: true });
+    }
+
+    function showStatus(message) {
+      const status = document.getElementById('statusMessage');
+      status.textContent = message;
+      status.classList.add('show');
+    }
+
+    function hideStatus() {
+      const status = document.getElementById('statusMessage');
+      status.textContent = '';
+      status.classList.remove('show');
+    }
+
+    function showSuccess() {
+      document.getElementById('formContent').classList.add('hide');
+      document.getElementById('successOverlay').classList.add('show');
+    }
+
     function handleSubmit() {
+      hideStatus();
+
+      const submitBtn = document.getElementById('submitBtn');
       const lastName  = document.getElementById('lastName').value.trim();
       const firstName = document.getElementById('firstName').value.trim();
       const position  = document.getElementById('position').value.trim();
       const phone     = document.getElementById('phone').value.trim();
 
       if (!lastName || !firstName || !position || !phone) {
-        // Shake required empty fields
         ['lastName','firstName','position','phone'].forEach(id => {
           const el = document.getElementById(id);
           if (!el.value.trim()) {
-            el.style.borderColor = 'var(--error)';
-            el.style.boxShadow = '0 0 0 3px rgba(248,113,113,0.2)';
-            el.addEventListener('input', () => {
-              el.style.borderColor = '';
-              el.style.boxShadow = '';
-            }, { once: true });
+            setFieldError(el);
           }
         });
+        showStatus('Будь ласка, заповніть усі обовʼязкові поля.');
         return;
       }
 
@@ -484,14 +542,24 @@
         }
       };
 
-      // Send to Telegram WebApp if available
-      //if (window.Telegram && window.Telegram.WebApp) {
-      window.Telegram.WebApp.sendData(JSON.stringify(payload));
-      //}
+      if (!tg) {
+        console.error('Telegram WebApp SDK недоступний');
+        showStatus('Цю форму потрібно відкривати всередині Telegram-бота.');
+        return;
+      }
 
-      // Show success
-      document.getElementById('formContent').classList.add('hide');
-      document.getElementById('successOverlay').classList.add('show');
+      try {
+        submitBtn.disabled = true;
+        tg.sendData(JSON.stringify(payload));
+        showSuccess();
+        setTimeout(() => {
+          tg.close();
+        }, 300);
+      } catch (error) {
+        console.error('Помилка відправлення в Telegram:', error);
+        submitBtn.disabled = false;
+        showStatus('Не вдалося передати дані в Telegram. Спробуйте ще раз.');
+      }
     }
   </script>
 </body>
