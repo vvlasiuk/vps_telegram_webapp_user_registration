@@ -22,7 +22,6 @@
       --border-focus: rgba(37,99,235,0.5);
       --error: #ef4444;
       --success: #10b981;
-      --warning: #f59e0b;
     }
 
     body {
@@ -241,8 +240,6 @@
       border-radius: 10px;
       font-size: 14px;
       line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
     }
 
     .status-message.show { display: block; }
@@ -250,22 +247,6 @@
       background: rgba(239, 68, 68, 0.08);
       border: 1px solid rgba(239, 68, 68, 0.2);
       color: #b91c1c;
-    }
-    .status-message.info {
-      display: block;
-      margin-top: 20px;
-      background: rgba(37, 99, 235, 0.08);
-      border: 1px solid rgba(37, 99, 235, 0.18);
-      color: #1d4ed8;
-      font-size: 12px;
-    }
-    .status-message.warning {
-      display: block;
-      margin-top: 20px;
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.22);
-      color: #b45309;
-      font-size: 12px;
     }
 
     .success-overlay {
@@ -414,8 +395,6 @@
         </button>
 
         <div class="status-message error" id="statusMessage"></div>
-        <div class="status-message info" id="debugStatus">Ініціалізація діагностики...</div>
-        <div class="status-message warning" id="payloadStatus">Payload ще не формувався.</div>
       </div>
     </div>
 
@@ -425,43 +404,9 @@
   <script>
     const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-    function setDebug(message) {
-      const el = document.getElementById('debugStatus');
-      el.textContent = message;
-      console.log('[WEBAPP DEBUG]', message);
-    }
-
-    function setPayloadDebug(message) {
-      const el = document.getElementById('payloadStatus');
-      el.textContent = message;
-      console.log('[WEBAPP PAYLOAD]', message);
-    }
-
-    function safeStringify(value) {
-      try {
-        return JSON.stringify(value, null, 2);
-      } catch (e) {
-        return String(value);
-      }
-    }
-
     if (tg) {
       tg.ready();
       tg.expand();
-      setDebug(
-        'Telegram WebApp доступний. ' +
-        'platform=' + (tg.platform || 'unknown') + '; ' +
-        'version=' + (tg.version || 'unknown') + '; ' +
-        'colorScheme=' + (tg.colorScheme || 'unknown') + '; ' +
-        'initData=' + (tg.initData ? 'present' : 'missing') + '; ' +
-        'user=' + ((tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.username) || (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || 'unknown')
-      );
-      console.log('Telegram.WebApp object:', tg);
-      console.log('Telegram.WebApp.initDataUnsafe:', tg.initDataUnsafe);
-      console.log('Telegram.WebApp.initData:', tg.initData);
-    } else {
-      setDebug('Telegram WebApp SDK недоступний. Якщо ви бачите це повідомлення в Telegram, Mini App відкрито не в режимі WebApp або скрипт Telegram не завантажився.');
-      console.error('Telegram WebApp SDK недоступний');
     }
 
     function setFieldError(el) {
@@ -506,7 +451,6 @@
             setFieldError(el);
           }
         });
-        setPayloadDebug('Валідація не пройдена: одне або більше обовʼязкових полів порожні.');
         showStatus('Будь ласка, заповніть усі обовʼязкові поля.');
         return;
       }
@@ -525,8 +469,6 @@
         }
       };
 
-      setPayloadDebug('Payload сформовано:\n' + safeStringify(payload));
-
       if (!tg) {
         console.error('Telegram WebApp SDK недоступний');
         showStatus('Цю форму потрібно відкривати всередині Telegram-бота.');
@@ -535,14 +477,14 @@
 
       try {
         submitBtn.disabled = true;
-        setDebug('Викликаю tg.sendData(...)');
         tg.sendData(JSON.stringify(payload));
-        setDebug('tg.sendData(...) виконано без помилки JavaScript. Якщо бот нічого не отримав, перевіряйте обробник web_app_data у боті.');
         showSuccess();
+        setTimeout(() => {
+          tg.close();
+        }, 300);
       } catch (error) {
         console.error('Помилка відправлення в Telegram:', error);
         submitBtn.disabled = false;
-        setDebug('Помилка tg.sendData(...): ' + (error && error.message ? error.message : String(error)));
         showStatus('Не вдалося передати дані в Telegram. Спробуйте ще раз.');
       }
     }
