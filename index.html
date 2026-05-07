@@ -549,9 +549,9 @@
         submitBtn.disabled = true;
         tg.sendData(JSON.stringify(payload));
         showSuccess();
-        setTimeout(() => {
-          tg.close();
-        }, 300);
+        // setTimeout(() => {
+        //   tg.close();
+        // }, 300);
       } catch (error) {
         console.error('Помилка відправлення в Telegram:', error);
         submitBtn.disabled = false;
