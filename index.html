@@ -160,6 +160,12 @@
       touch-action: manipulation;
     }
 
+    #phone {
+      line-height: 1.2;
+      font-variant-numeric: lining-nums tabular-nums;
+      font-feature-settings: 'lnum' 1, 'tnum' 1;
+    }
+
     .field input::placeholder { color: #aab4c4; }
 
     .field input:focus {
@@ -378,7 +384,7 @@
           <label>Номер телефону <span class="req">*</span></label>
           <div class="input-wrap">
             <span class="field-icon">📞</span>
-            <input type="tel" id="phone" placeholder="+380 XX XXX XX XX" required />
+            <input type="tel" id="phone" placeholder="XXX XXX XX XX" required />
           </div>
         </div>
 
@@ -386,7 +392,7 @@
           <label>Email</label>
           <div class="input-wrap">
             <span class="field-icon">📧</span>
-            <input type="email" id="email" placeholder="volodymyr@company.com" />
+            <input type="email" id="email" placeholder="vlaspro.com.ua@gmail.com" />
           </div>
         </div>
 
